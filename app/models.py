@@ -7,4 +7,3 @@ class QuestionResponse(BaseModel):
     source: str
     matched_question: str
     answer: str
-

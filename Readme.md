@@ -1,22 +1,18 @@
-# AI-Powered Question Answering System
-
-This project is an AI-powered question answering system built with FastAPI, LangChain, and OpenAI. It uses Docker for easy deployment and management.
-
 
 ## Getting Started
 
 
-2. Create a `.env` file in the project root and add your OpenAI API key:
+2. Create a `.env` file in the project root and add the following environment variables:
    ```
    OPENAI_API_KEY=your_api_key_here
+   API_SECRET_TOKEN=secret-token
+   DATABASE_URL=postgresql://user:password@db:5432/vectordb
    ```
 
-3. Build and run the Docker container:
+3. Build and run the Docker containers using Docker Compose:
    ```
-   docker build -t ai-qa-system .
-   docker run -p 8000:8000 --env-file .env ai-qa-system
+   docker-compose up --build
    ```
-
 
 4. The API will be available at `http://localhost:8000`
 

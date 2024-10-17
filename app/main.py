@@ -3,8 +3,16 @@ from models import QuestionRequest, QuestionResponse
 from config import logger
 from chains import full_chain
 from auth import get_token
+from vector_store import init_db
+from contextlib import asynccontextmanager
+from typing import Dict, Any
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
+
+app = FastAPI(lifespan=lifespan)
 
 @app.post("/ask-question", response_model=QuestionResponse)
 async def ask_question(request: QuestionRequest, token: str = Depends(get_token)):
@@ -12,35 +20,10 @@ async def ask_question(request: QuestionRequest, token: str = Depends(get_token)
     logger.info(f"Received question: {user_question}")
 
     try:
-        result = full_chain.invoke(user_question)
-        logger.info(f"Result type: {type(result)}")
+        result = await full_chain.ainvoke(user_question)
         logger.info(f"Result content: {result}")
         
-        if isinstance(result, str):
-            if result.startswith("This is not really what I was trained for"):
-                return QuestionResponse(
-                    source="compliance",
-                    matched_question="N/A",
-                    answer=result
-                )
-            else:
-                return QuestionResponse(
-                    source="database",
-                    matched_question=user_question,
-                    answer=result
-                )
-        elif isinstance(result, dict):
-            return QuestionResponse(
-                source="openai",
-                matched_question="N/A",
-                answer=str(result)
-            )
-        else:
-            return QuestionResponse(
-                source="openai",
-                matched_question="N/A",
-                answer=str(result)
-            )
+        return result
     except Exception as e:
         logger.exception(f"Error processing question: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error processing question: {str(e)}")
