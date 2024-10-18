@@ -21,22 +21,6 @@ def classify_question(question: str) -> str:
     classification_chain = classification_prompt | chat_model | StrOutputParser()
     return classification_chain.invoke({"question": question})
 
-prompt = ChatPromptTemplate.from_template("""Answer the following question based on the context provided:
-
-Context: {context}
-
-Question: {question}
-
-Answer: """)
-
-retrieval_chain = (
-    {"context": retriever, "question": RunnablePassthrough()}
-    | prompt
-    | chat_model
-    | StrOutputParser()
-)
-
-
 
 def route_question(question: str) -> QuestionResponse:
     logger.info(f"Processing question: {question}")
@@ -56,7 +40,7 @@ def route_question(question: str) -> QuestionResponse:
     
     if classification.strip().lower() == "it":
         logger.info("Generating answer using OpenAI")
-        answer = retrieval_chain.invoke(question)
+        answer = generate_answer(question)
         return QuestionResponse(
             source="openai",
             matched_question="N/A",
@@ -69,8 +53,18 @@ def route_question(question: str) -> QuestionResponse:
             matched_question="N/A",
             answer="This is not really what I was trained for, therefore I cannot answer. Try again."
         )
-    
 
-full_chain = RunnablePassthrough() | RunnableLambda(route_question)
+def generate_answer(question: str) -> str:
+    prompt = ChatPromptTemplate.from_template("""Answer the following IT-related question:
+
+Question: {question}
+
+Answer: """)
+    
+    chain = prompt | chat_model | StrOutputParser()
+    return chain.invoke({"question": question})
+
+full_chain = RunnableLambda(route_question)
+
 
 
